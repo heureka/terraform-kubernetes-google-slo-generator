@@ -36,7 +36,7 @@ variable "image-tag" {
 }
 
 variable "api-requests" {
-  type = "map"
+  type = map(string)
   description = "requests for the api in kubernetes"
 
   default = {
@@ -46,32 +46,39 @@ variable "api-requests" {
 }
 
 variable "api-limits" {
-  type = "map"
+  type = map(string)
   description = "limits for the api in kubernetes"
 
   default = var.api-requests
 }
 
 variable "prometheus-backend-url" {
-  type = "string"
+  type = string
   description = "URL for the prometheus backend to read metrics from"
 
   default = "http://cortex-nginx.monitoring:8888/prometheus"
 }
 
 variable "ingress-host" {
-  type = "string"
+  type = string
   description = "host at which the api should be available outside of kubernetes"
 }
 
+variable "ingress-class-name" {
+  type = string
+  description = "ingress class to use for an ingress resource"
+
+  default = "nginx"
+}
+
 variable "bucket-location" {
-  type = "string"
+  type = string
   description = "location for the GCS bucket which SLOs will be read from"
 
   default = "EU"
 }
 
 variable "bucket-name" {
-  type = "string"
+  type = string
   description = "name of the GCS bucket which SLOs will be read from"
 }

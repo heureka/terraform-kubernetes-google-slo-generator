@@ -135,11 +135,9 @@ resource "kubernetes_ingress" "slo-generator" {
     name        = local.name
     namespace   = var.namespace
     labels      = local.labels_api
-    annotations = {
-      kubernetes.io/ingress.class = "nginx"
-    }
   }
   spec {
+    ingress_class_name = var.ingress-class-name
     rule {
       host = var.ingress-host
       http {
