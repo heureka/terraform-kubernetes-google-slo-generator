@@ -1,12 +1,12 @@
 backends:
-%{if prometheus-backend-url}
+%{if prometheus-backend-url != ""}
   prometheus:
     url: ${prometheus-backend-url}
 %{endif}
 
 exporters:
   prometheus:
-    url: http://slo-pushgateway:9091
+    url: http://slo-generator-pushgateway:9091
     metrics:
       - error_budget_burn_rate
       - alerting_burn_rate_threshold

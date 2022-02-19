@@ -1,14 +1,25 @@
 locals {
   name            = "slo-generator"
-  selector_labels = { app.kubernetes.io/name = local.name }
-  labels          = merge(selector_labels, {
-    app.kubernetes.io/managed-by = "terraform-kubernetes-google-slo-generator"
-    app.kubernetes.io/version    = var.generator-version
+  selector_labels = {
+    "app.kubernetes.io/name"      = local.name
+    "app.kubernetes.io/component" = "api"
+  }
+  labels = merge(local.selector_labels, {
+    "app.kubernetes.io/managed-by" = "terraform-kubernetes-google-slo-generator"
+    "app.kubernetes.io/version"    = var.generator-version
   })
-  labels_api = merge(labels, { app.kubernetes.io/component = "api" })
 }
 
-// TODO create and call a pushgateway module
+module "prometheus-pushgateway" {
+  source  = "heureka/prometheus-pushgateway/kubernetes"
+  version = "1.0.2"
+
+  name                 = "slo-generator-pushgateway"
+  namespace            = var.namespace
+  requests             = var.pushgateway-requests
+  limits               = var.pushgateway-limits
+  servicemonitor-label = var.servicemonitor-label
+}
 
 resource "google_service_account" "slo-generator" {
   project = var.storage-project
@@ -18,7 +29,7 @@ resource "google_service_account" "slo-generator" {
 }
 
 resource "google_service_account_iam_binding" "slo-generator-workload-identity" {
-  service_account_id = google_service_account.slo-generator.account_id
+  service_account_id = google_service_account.slo-generator.name
   role               = "roles/iam.workloadIdentityUser"
   members            = ["serviceAccount:${var.gke-project}.svc.id.goog[${var.namespace}/${local.name}]"]
 }
@@ -50,7 +61,7 @@ resource "kubernetes_deployment" "slo-generator" {
   metadata {
     name      = local.name
     namespace = var.namespace
-    labels    = local.labels_api
+    labels    = local.labels
   }
   spec {
     selector {
@@ -58,7 +69,7 @@ resource "kubernetes_deployment" "slo-generator" {
     }
     template {
       metadata {
-        labels = local.labels_api
+        labels = local.labels
         name   = local.name
       }
       spec {
@@ -84,6 +95,10 @@ resource "kubernetes_deployment" "slo-generator" {
             requests = var.api-requests
             limits   = var.api-limits
           }
+          security_context {
+            allow_privilege_escalation = false
+            read_only_root_filesystem  = true
+          }
         }
         volume {
           name = "config"
@@ -104,7 +119,7 @@ resource "kubernetes_config_map" "slo-generator" {
   metadata {
     name      = local.name
     namespace = var.namespace
-    labels    = local.labels_api
+    labels    = local.labels
   }
   data = {
     "config.yaml" = templatefile("${path.module}/config.yaml", {
@@ -117,7 +132,7 @@ resource "kubernetes_service" "slo-generator" {
   metadata {
     name      = local.name
     namespace = var.namespace
-    labels    = local.labels_api
+    labels    = local.labels
   }
   spec {
     type = "ClusterIP"
@@ -132,9 +147,9 @@ resource "kubernetes_service" "slo-generator" {
 
 resource "kubernetes_ingress" "slo-generator" {
   metadata {
-    name        = local.name
-    namespace   = var.namespace
-    labels      = local.labels_api
+    name      = local.name
+    namespace = var.namespace
+    labels    = local.labels
   }
   spec {
     ingress_class_name = var.ingress-class-name

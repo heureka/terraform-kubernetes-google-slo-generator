@@ -12,3 +12,4 @@ An extremely opinionated module, that deploys Google's
 * You want to keep the default policies as shown in slo-exporter's examples (1h, 12h, 7d, 28d)
 * You are using ingress nginx controller (this is configurable)
 * GKE cluster has [workload identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity) enabled
+* You are running prometheus operator (`monitoring.coreos.com/v1` in your cluster)
