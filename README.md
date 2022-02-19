@@ -13,3 +13,7 @@ An extremely opinionated module, that deploys Google's
 * You are using ingress nginx controller (this is configurable)
 * GKE cluster has [workload identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity) enabled
 * You are running prometheus operator (`monitoring.coreos.com/v1` in your cluster)
+
+## Diagram
+
+![Diagram](diagram.png)
