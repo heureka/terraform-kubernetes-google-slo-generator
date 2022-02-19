@@ -39,6 +39,8 @@ resource "google_storage_bucket" "slos" {
 
   location = var.bucket-location
   name     = var.bucket-name
+
+  uniform_bucket_level_access = true
 }
 
 resource "google_storage_bucket_iam_member" "slo-generator-gcs-object-viewer" {
@@ -146,6 +148,8 @@ resource "kubernetes_service" "slo-generator" {
 }
 
 resource "kubernetes_ingress" "slo-generator" {
+  count = var.ingress-host == "" ? 0 : 1
+
   metadata {
     name      = local.name
     namespace = var.namespace

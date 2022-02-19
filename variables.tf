@@ -65,6 +65,8 @@ variable "prometheus-backend-url" {
 variable "ingress-host" {
   type        = string
   description = "host at which the api should be available outside of kubernetes"
+
+  default = ""
 }
 
 variable "ingress-class-name" {
