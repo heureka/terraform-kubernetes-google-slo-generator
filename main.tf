@@ -90,7 +90,7 @@ resource "kubernetes_deployment" "slo-generator" {
           image = "${var.image}:${var.image-tag}"
           args  = ["api", "--config", "/etc/config/config.yaml"]
           volume_mount {
-            mount_path = "/etc/config"
+            mount_path = "/etc/config/config.yaml"
             sub_path   = "config.yaml"
             name       = "config"
           }
