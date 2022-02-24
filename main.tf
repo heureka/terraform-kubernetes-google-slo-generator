@@ -49,6 +49,12 @@ resource "google_storage_bucket_iam_member" "slo-generator-gcs-object-viewer" {
   role   = "roles/storage.objectViewer"
 }
 
+resource "google_storage_bucket_iam_member" "slo-generator-gcs-legacy-bucket-reader" {
+  bucket = google_storage_bucket.slos.id
+  member = "serviceAccount:${google_service_account.slo-generator.email}"
+  role   = "roles/storage.legacyBucketReader"
+}
+
 resource "kubernetes_service_account" "slo-generator" {
   metadata {
     name        = local.name
@@ -76,6 +82,9 @@ resource "kubernetes_deployment" "slo-generator" {
       }
       spec {
         service_account_name = kubernetes_service_account.slo-generator.metadata[0].name
+        node_selector        = {
+          "iam.gke.io/gke-metadata-server-enabled" : "true"
+        }
         container {
           name  = local.name
           image = "${var.image}:${var.image-tag}"
