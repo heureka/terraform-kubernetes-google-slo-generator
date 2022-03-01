@@ -156,7 +156,7 @@ resource "kubernetes_service" "slo-generator" {
   }
 }
 
-resource "kubernetes_ingress" "slo-generator" {
+resource "kubernetes_ingress_v1" "slo-generator" {
   count = var.ingress-host == "" ? 0 : 1
 
   metadata {
@@ -171,8 +171,12 @@ resource "kubernetes_ingress" "slo-generator" {
       http {
         path {
           backend {
-            service_name = kubernetes_service.slo-generator.metadata[0].name
-            service_port = kubernetes_service.slo-generator.spec[0].port[0].name
+            service {
+              name = kubernetes_service.slo-generator.metadata[0].name
+              port {
+                name = kubernetes_service.slo-generator.spec[0].port[0].name
+              }
+            }
           }
           path = "/"
         }
