@@ -110,6 +110,17 @@ resource "kubernetes_deployment" "slo-generator" {
             allow_privilege_escalation = false
             read_only_root_filesystem  = true
           }
+          liveness_probe {
+            failure_threshold = 3
+            http_get {
+              path = "/"
+              port = "http"
+              scheme = "HTTP"
+            }
+            period_seconds = 30
+            success_threshold = 1
+            timeout_seconds = 2
+          }
         }
         volume {
           name = "config"
