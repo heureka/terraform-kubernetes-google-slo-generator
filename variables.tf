@@ -24,7 +24,7 @@ variable "image" {
   type        = string
   description = "slo-generator image to use"
 
-  default = "docker pull ghcr.io/heureka/omni-slo-generator"
+  default = "ghcr.io/heureka/omni-slo-generator"
 }
 
 variable "image-tag" {
