@@ -77,6 +77,10 @@ resource "kubernetes_deployment" "slo-generator" {
         container {
           name  = local.name
           image = "${var.image}:${var.image-tag}"
+          env {
+            name = "OMNI_SLO_GENERATOR_SLO_GCS_BUCKET"
+            value = google_storage_bucket.slos.name
+          }
           volume_mount {
             mount_path = "/etc/config/config.yaml"
             sub_path   = "config.yaml"
