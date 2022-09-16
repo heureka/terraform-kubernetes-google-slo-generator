@@ -10,17 +10,6 @@ locals {
   })
 }
 
-module "prometheus-pushgateway" {
-  source  = "heureka/prometheus-pushgateway/kubernetes"
-  version = "1.0.2"
-
-  name                 = "slo-generator-pushgateway"
-  namespace            = var.namespace
-  requests             = var.pushgateway-requests
-  limits               = var.pushgateway-limits
-  servicemonitor-label = var.servicemonitor-label
-}
-
 resource "google_service_account" "slo-generator" {
   project = var.storage-project
 
@@ -88,15 +77,10 @@ resource "kubernetes_deployment" "slo-generator" {
         container {
           name  = local.name
           image = "${var.image}:${var.image-tag}"
-          args  = ["api", "--config", "/etc/config/config.yaml"]
           volume_mount {
             mount_path = "/etc/config/config.yaml"
             sub_path   = "config.yaml"
             name       = "config"
-          }
-          volume_mount {
-            mount_path = "/tmp"
-            name       = "tmp"
           }
           port {
             container_port = 8080
@@ -113,7 +97,7 @@ resource "kubernetes_deployment" "slo-generator" {
           liveness_probe {
             failure_threshold = 3
             http_get {
-              path = "/"
+              path = "/metrics"
               port = "http"
               scheme = "HTTP"
             }
@@ -127,10 +111,6 @@ resource "kubernetes_deployment" "slo-generator" {
           config_map {
             name = kubernetes_config_map.slo-generator.metadata[0].name
           }
-        }
-        volume {
-          name = "tmp"
-          empty_dir {}
         }
       }
     }
@@ -166,6 +146,38 @@ resource "kubernetes_service" "slo-generator" {
     selector = local.selector_labels
   }
 }
+
+
+resource "kubernetes_manifest" "slo-generator-service-monitor" {
+  provider = kubernetes
+
+  manifest = {
+    "apiVersion" = "monitoring.coreos.com/v1"
+    "kind"       = "ServiceMonitor"
+    "metadata"   = {
+      "labels"    = merge(local.labels, var.servicemonitor-label)
+      "name"      = local.name
+      "namespace" = var.namespace
+    }
+    "spec" = {
+      "endpoints" = [
+        {
+          path = "/metrics"
+          port = kubernetes_service.slo-generator.spec[0].port[0].name
+        },
+      ]
+      "namespaceSelector" = {
+        "matchNames" = [
+          var.namespace,
+        ]
+      }
+      "selector" = {
+        "matchLabels" = local.selector_labels
+      }
+    }
+  }
+}
+
 
 resource "kubernetes_ingress_v1" "slo-generator" {
   count = var.ingress-host == "" ? 0 : 1

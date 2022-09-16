@@ -5,9 +5,9 @@ variable "gke-project" {
 
 variable "generator-version" {
   type        = string
-  description = "slo-generator version to use"
+  description = "omni-slo-generator version to use"
 
-  default = "2.2.0"
+  default = "1.0.0"
 }
 
 variable "storage-project" {
@@ -24,15 +24,14 @@ variable "image" {
   type        = string
   description = "slo-generator image to use"
 
-  // This is not ideal, but let's wait for https://github.com/google/slo-generator/issues/159
-  default = "gcr.io/slo-generator-ci-a2b4/slo-generator"
+  default = "docker pull ghcr.io/heureka/omni-slo-generator"
 }
 
 variable "image-tag" {
   type        = string
   description = "slo-generator image tag to use"
 
-  default = "2.2.0"
+  default = "releases-1.0.0"
 }
 
 variable "api-requests" {
@@ -40,7 +39,7 @@ variable "api-requests" {
   description = "requests for the api in kubernetes"
 
   default = {
-    cpu    = "100m"
+    cpu    = "200m"
     memory = "200Mi"
   }
 }
@@ -50,7 +49,7 @@ variable "api-limits" {
   description = "limits for the api in kubernetes"
 
   default = {
-    cpu    = "100m"
+    cpu    = "200m"
     memory = "200Mi"
   }
 }
@@ -59,7 +58,14 @@ variable "prometheus-backend-url" {
   type        = string
   description = "URL for the prometheus backend to read metrics from"
 
-  default = "http://cortex-nginx.monitoring:8888/prometheus"
+  default = "http://mimir-nginx.monitoring:8888/prometheus"
+}
+
+variable "prometheus-backend-orgid-header" {
+  type        = string
+  description = "URL for the prometheus backend to read metrics from"
+
+  default = ""
 }
 
 variable "ingress-host" {
@@ -88,26 +94,6 @@ variable "bucket-name" {
   description = "name of the GCS bucket which SLOs will be read from"
 }
 
-
-variable "pushgateway-requests" {
-  type        = map(string)
-  description = "requests for the pushgateway in kubernetes"
-
-  default = {
-    cpu    = "100m"
-    memory = "128Mi"
-  }
-}
-
-variable "pushgateway-limits" {
-  type        = map(string)
-  description = "limits for the pushgateway in kubernetes"
-
-  default = {
-    cpu    = "100m"
-    memory = "128Mi"
-  }
-}
 
 variable "servicemonitor-label" {
   type        = map(string)

@@ -2,16 +2,11 @@ backends:
 %{if prometheus-backend-url != ""}
   prometheus:
     url: ${prometheus-backend-url}
+    %{if prometheus-backend-orgid-header != ""}
+    headers:
+      X-Scope-OrgID: ${prometheus-backend-orgid-header}
+    %{endif}
 %{endif}
-
-exporters:
-  prometheus:
-    url: http://slo-generator-pushgateway:9091
-    metrics:
-      - error_budget_burn_rate
-      - alerting_burn_rate_threshold
-      - sli_measurement
-      - slo_target
 
 error_budget_policies:
   default:

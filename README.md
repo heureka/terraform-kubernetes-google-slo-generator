@@ -1,14 +1,13 @@
 # terraform-kubernetes-google-slo-generator
 
-An extremely opinionated module, that deploys Google's 
-[SLO generator][slo-generator] into GKE.
+An extremely opinionated module, that deploys [omni-slo-generator][omni-slo-gnerator]
+based on Google's [SLO generator][slo-generator] into GKE.
 
 ## Assumptions made
 
-* Prometheus backend is a cortex cluster (without multi tenancy)
-  * Cortex is running in monitoring namespace and has a nginx pod `cortex-nginx` for proxying (as cortex helm chart does it)
+* Prometheus backend is a mimir cluster
+  * Mimir is running in monitoring namespace and has a nginx pod `mimir-nginx` for proxying (as mimir helm chart does it)
   * This can be overridden variable `prometheus-backend-url`
-* Exporter is a pushgateway deployed by this module (might change if [this][expose self pr] gets merged)
 * You want to keep the default policies as shown in slo-exporter's examples (1h, 12h, 7d, 28d)
 * You are using ingress nginx controller (this is configurable)
 * GKE cluster has [workload identity][workload identity] enabled
@@ -26,7 +25,7 @@ you don't need to expose it outside the cluster.
 ```terraform
 module "slo-generator" {
   source = "heureka/google-slo-generator/kubernetes"
-  version = "1.0.2"
+  version = "2.0.0"
 
   gke-project     = "company-k8s"
   storage-project = "todo-app"
@@ -37,22 +36,16 @@ module "slo-generator" {
 ```
 
 After that, you can upload your [SLO manifests][slo config]
-to the SLOs bucket, create a job to periodically send following http requests:
-
-```shell
-# single SLO
-curl -X POST -d "gs://my-unique-slos/slo.yaml" http://slo-generator.example.com
-# batched request
-curl -X POST -d "gs://my-unique-slos/slo.yaml;gs://my-unique-slos/slo2.yaml" http://slo-generator.example.com/?batch=true
-```
+to the SLOs bucket, which the generator will automatically go through and 
+calculate SLOs for
 
 ### Additional configuration
 
 Please check the input tab of [this module's page][input tab] on terraform 
 registry to see all available options and their descriptions. 
 
+[omni-slo-generator]: https://github.com/heureka/omni-slo-generator
 [slo-generator]: https://github.com/google/slo-generator/
 [input tab]: https://registry.terraform.io/modules/heureka/google-slo-generator/kubernetes/latest?tab=inputs
-[expose elf pr]: https://github.com/google/slo-generator/pull/209
 [workload identity]: https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity
 [slo config]: https://github.com/google/slo-generator/#slo-configuration
