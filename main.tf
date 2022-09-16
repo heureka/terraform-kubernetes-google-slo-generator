@@ -1,5 +1,5 @@
 locals {
-  name            = "slo-generator"
+  name = "slo-generator"
   selector_labels = {
     "app.kubernetes.io/name"      = local.name
     "app.kubernetes.io/component" = "api"
@@ -46,8 +46,8 @@ resource "google_storage_bucket_iam_member" "slo-generator-gcs-legacy-bucket-rea
 
 resource "kubernetes_service_account" "slo-generator" {
   metadata {
-    name        = local.name
-    namespace   = var.namespace
+    name      = local.name
+    namespace = var.namespace
     annotations = {
       "iam.gke.io/gcp-service-account" = google_service_account.slo-generator.email
     }
@@ -71,7 +71,7 @@ resource "kubernetes_deployment" "slo-generator" {
       }
       spec {
         service_account_name = kubernetes_service_account.slo-generator.metadata[0].name
-        node_selector        = {
+        node_selector = {
           "iam.gke.io/gke-metadata-server-enabled" : "true"
         }
         container {
@@ -97,13 +97,13 @@ resource "kubernetes_deployment" "slo-generator" {
           liveness_probe {
             failure_threshold = 3
             http_get {
-              path = "/metrics"
-              port = "http"
+              path   = "/metrics"
+              port   = "http"
               scheme = "HTTP"
             }
-            period_seconds = 30
+            period_seconds    = 30
             success_threshold = 1
-            timeout_seconds = 2
+            timeout_seconds   = 2
           }
         }
         volume {
@@ -125,7 +125,8 @@ resource "kubernetes_config_map" "slo-generator" {
   }
   data = {
     "config.yaml" = templatefile("${path.module}/config.yaml", {
-      prometheus-backend-url = var.prometheus-backend-url
+      prometheus-backend-url          = var.prometheus-backend-url
+      prometheus-backend-orgid-header = var.prometheus-backend-orgid-header
     })
   }
 }
@@ -154,7 +155,7 @@ resource "kubernetes_manifest" "slo-generator-service-monitor" {
   manifest = {
     "apiVersion" = "monitoring.coreos.com/v1"
     "kind"       = "ServiceMonitor"
-    "metadata"   = {
+    "metadata" = {
       "labels"    = merge(local.labels, var.servicemonitor-label)
       "name"      = local.name
       "namespace" = var.namespace
