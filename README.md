@@ -25,7 +25,7 @@ you don't need to expose it outside the cluster.
 ```terraform
 module "slo-generator" {
   source = "heureka/google-slo-generator/kubernetes"
-  version = "2.0.0"
+  version = "2.0.3"
 
   gke-project     = "company-k8s"
   storage-project = "todo-app"

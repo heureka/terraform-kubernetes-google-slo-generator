@@ -7,7 +7,7 @@ variable "generator-version" {
   type        = string
   description = "omni-slo-generator version to use"
 
-  default = "1.0.0"
+  default = "1.0.1"
 }
 
 variable "storage-project" {
@@ -31,7 +31,7 @@ variable "image-tag" {
   type        = string
   description = "slo-generator image tag to use"
 
-  default = "releases-1.0.0"
+  default = "releases-1.0.1"
 }
 
 variable "api-requests" {

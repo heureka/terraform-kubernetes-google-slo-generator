@@ -169,6 +169,13 @@ resource "kubernetes_manifest" "slo-generator-service-monitor" {
         {
           path = "/metrics"
           port = kubernetes_service.slo-generator.spec[0].port[0].name
+          metricRelabelings = [
+            {
+              action = "drop"
+              regex = "events_count"
+              sourceLabels = ["__name__"]
+            }
+          ]
         },
       ]
       "namespaceSelector" = {
