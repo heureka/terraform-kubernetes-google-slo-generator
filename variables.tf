@@ -101,3 +101,10 @@ variable "servicemonitor-label" {
 
   default = {}
 }
+
+variable "scrape_interval_seconds" {
+  type        = number
+  description = "Interval to sleep between computations of scraped metrics"
+
+  default = 30
+}
