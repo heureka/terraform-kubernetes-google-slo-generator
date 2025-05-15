@@ -78,8 +78,12 @@ resource "kubernetes_deployment" "slo-generator" {
           name  = local.name
           image = "${var.image}:${var.image-tag}"
           env {
-            name = "OMNI_SLO_GENERATOR_SLO_GCS_BUCKET"
+            name  = "OMNI_SLO_GENERATOR_SLO_GCS_BUCKET"
             value = google_storage_bucket.slos.name
+          }
+          env {
+            name  = "OMNI_SLO_GENERATOR_INTERVAL_SECONDS"
+            value = var.scrape_interval_seconds
           }
           volume_mount {
             mount_path = "/etc/config/config.yaml"
@@ -171,8 +175,8 @@ resource "kubernetes_manifest" "slo-generator-service-monitor" {
           port = kubernetes_service.slo-generator.spec[0].port[0].name
           metricRelabelings = [
             {
-              action = "drop"
-              regex = "events_count"
+              action       = "drop"
+              regex        = "events_count"
               sourceLabels = ["__name__"]
             }
           ]
