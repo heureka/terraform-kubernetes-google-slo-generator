@@ -8,6 +8,19 @@ locals {
     "app.kubernetes.io/managed-by" = "terraform-kubernetes-google-slo-generator"
     "app.kubernetes.io/version"    = var.generator-version
   })
+
+  # Name of the Secret synced from Vault (via ExternalSecret) holding the
+  # Confluence credentials when the wiki feature is enabled.
+  wiki_secret_name = "${local.name}-confluence"
+
+  # Plain wiki env vars set on the container when the feature is enabled.
+  # The Confluence credentials themselves come via envFrom (wiki_secret_name).
+  wiki_env = var.wiki-enabled ? {
+    OMNI_SLO_GENERATOR_WIKI_ENABLED = "true"
+    OMNI_SLO_GENERATOR_TEAM         = var.team
+  } : {}
+
+  wiki_secrets = var.wiki-enabled ? [local.wiki_secret_name] : []
 }
 
 resource "google_service_account" "slo-generator" {
@@ -55,6 +68,19 @@ resource "kubernetes_service_account" "slo-generator" {
 }
 
 resource "kubernetes_deployment" "slo-generator" {
+  # When the wiki feature is on, the container consumes the Confluence Secret via
+  # envFrom. That Secret is produced by the ExternalSecret below, but the
+  # reference goes through computed locals, so there is no implicit graph edge —
+  # make it explicit so the ExternalSecret is created before the rollout.
+  depends_on = [kubernetes_manifest.wiki-confluence-secret]
+
+  lifecycle {
+    precondition {
+      condition     = !var.wiki-enabled || trimspace(var.team) != ""
+      error_message = "team must be set to a non-empty value when wiki-enabled is true."
+    }
+  }
+
   metadata {
     name      = local.name
     namespace = var.namespace
@@ -84,6 +110,21 @@ resource "kubernetes_deployment" "slo-generator" {
           env {
             name  = "OMNI_SLO_GENERATOR_INTERVAL_SECONDS"
             value = var.scrape_interval_seconds
+          }
+          dynamic "env" {
+            for_each = merge(var.extra-env, local.wiki_env)
+            content {
+              name  = env.key
+              value = env.value
+            }
+          }
+          dynamic "env_from" {
+            for_each = toset(concat(local.wiki_secrets, var.env-from-secrets))
+            content {
+              secret_ref {
+                name = env_from.value
+              }
+            }
           }
           volume_mount {
             mount_path = "/etc/config/config.yaml"
@@ -122,6 +163,64 @@ resource "kubernetes_deployment" "slo-generator" {
         }
       }
     }
+  }
+}
+
+# Wiki documentation feature: sync Confluence credentials from Vault into a
+# Kubernetes Secret via the External Secrets Operator, then inject them as env
+# vars (envFrom) on the container. Requires the namespace's SecretStore to have
+# read access to the source Vault path (e.g. enabling common secrets for the
+# project). The SecretStore is assumed to be named after the namespace.
+resource "kubernetes_manifest" "wiki-confluence-secret" {
+  count = var.wiki-enabled ? 1 : 0
+
+  manifest = {
+    apiVersion = "external-secrets.io/v1beta1"
+    kind       = "ExternalSecret"
+    metadata = {
+      name      = local.wiki_secret_name
+      namespace = var.namespace
+      labels    = local.labels
+    }
+    spec = {
+      refreshInterval = var.wiki-secret-refresh-interval
+      secretStoreRef = {
+        name = var.wiki-secret-store-name == "" ? var.namespace : var.wiki-secret-store-name
+        kind = var.wiki-secret-store-kind
+      }
+      target = {
+        name = local.wiki_secret_name
+      }
+      data = [
+        for key in var.wiki-confluence-secret-keys : {
+          secretKey = key
+          remoteRef = {
+            key      = var.wiki-confluence-vault-key
+            property = key
+          }
+        }
+      ]
+    }
+  }
+
+  # Block the apply until ESO reports the ExternalSecret as Ready, which means
+  # the backing Kubernetes Secret has actually been synced from Vault and
+  # exists. Combined with the deployment's depends_on, this ensures the
+  # container does not roll out before the secret it consumes via envFrom is
+  # present (avoiding a first-apply CreateContainerConfigError race).
+  wait {
+    condition {
+      type   = "Ready"
+      status = "True"
+    }
+  }
+
+  # Fail fast instead of blocking the whole apply indefinitely: if ESO cannot
+  # sync the secret (missing Vault key, misconfigured store, missing CRD), the
+  # wait above errors after this timeout with a clear signal rather than hanging.
+  timeouts {
+    create = var.wiki-secret-wait-timeout
+    update = var.wiki-secret-wait-timeout
   }
 }
 
