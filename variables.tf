@@ -148,11 +148,14 @@ variable "wiki-confluence-secret-keys" {
   type        = list(string)
   description = "Property names to read from the Vault key and expose as env vars for the wiki feature. Each becomes both the env var name and the Vault property name, so they must match the names the generator expects."
 
+  # Org-wide, per-environment values shared by all teams, hence in the common
+  # Vault key: CONFLUENCE_* route the tree, GRAFANA_ENV is the dashboard var-env.
   default = [
     "OMNI_SLO_GENERATOR_CONFLUENCE_TOKEN",
     "OMNI_SLO_GENERATOR_CONFLUENCE_EMAIL",
     "OMNI_SLO_GENERATOR_CONFLUENCE_SPACE_KEY",
     "OMNI_SLO_GENERATOR_CONFLUENCE_ROOT_PAGE_ID",
+    "OMNI_SLO_GENERATOR_GRAFANA_ENV",
   ]
 }
 

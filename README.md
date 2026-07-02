@@ -95,6 +95,13 @@ interval and the wait timeout can all be overridden — see
 a cluster-scoped store), `wiki-secret-refresh-interval` and
 `wiki-secret-wait-timeout` in the inputs.
 
+The properties in `wiki-confluence-secret-keys` are org-wide, per-environment
+values shared by all teams, hence in the common Vault key: the `CONFLUENCE_*`
+values route every team under one Confluence tree per environment, and
+`OMNI_SLO_GENERATOR_GRAFANA_ENV` is the Grafana `var-env` UID the dashboard links
+point at. All listed properties must exist under the Vault key, or the
+`ExternalSecret` fails to sync and the apply trips `wiki-secret-wait-timeout`.
+
 [eso]: https://external-secrets.io/
 [omni-slo-generator]: https://github.com/heureka/omni-slo-generator
 [slo-generator]: https://github.com/google/slo-generator/
